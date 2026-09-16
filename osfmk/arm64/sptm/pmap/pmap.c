@@ -90,7 +90,6 @@
 
 #include <arm64/proc_reg.h>
 #include <pexpert/arm64/boot.h>
-#include <arm64/ppl/uat.h>
 #if defined(KERNEL_INTEGRITY_KTRR) || defined(KERNEL_INTEGRITY_CTRR) || defined(KERNEL_INTEGRITY_PV_CTRR)
 #include <arm64/amcc_rorgn.h>
 #endif // defined(KERNEL_INTEGRITY_KTRR) || defined(KERNEL_INTEGRITY_CTRR) || defined(KERNEL_INTEGRITY_PV_CTRR)

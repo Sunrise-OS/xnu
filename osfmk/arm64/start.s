@@ -33,7 +33,9 @@
 #include <pexpert/arm64/board_config.h>
 #include <mach_assert.h>
 #include <machine/asm.h>
+#if CONFIG_ARM64_TUNABLES
 #include <arm64/tunables/tunables.s>
+#endif
 #include <arm64/exception_asm.h>
 
 #if __ARM_KERNEL_PROTECT__
@@ -781,10 +783,11 @@ common_start:
 	// Initialization common to all non-virtual Apple targets
 #endif  // APPLE_ARM64_ARCH_FAMILY
 
-	// Read MIDR before start of per-SoC tunables
+#if CONFIG_ARM64_TUNABLES
+	// Read MIDR before applying per-SoC tunables.
 	mrs x12, MIDR_EL1
-
 	APPLY_TUNABLES x12, x13, x14
+#endif
 
 #if HAS_CLUSTER && !NO_CPU_OVRD
 	// Unmask external IRQs if we're restarting from non-retention WFI

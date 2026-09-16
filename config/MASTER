@@ -328,6 +328,12 @@ options		CONFIG_EXCLAVES			# <config_exclaves>
 # Compile XNU with PPL support.
 options   CONFIG_PMAP_PPL			# <config_pmap_ppl>
 
+# Apple-silicon hardware capabilities.  These remain disabled unless a
+# board configuration explicitly adds the matching attribute.
+options   CONFIG_AMCC_RORGN			# <config_amcc_rorgn>
+options   CONFIG_SART				# <config_sart>
+options   CONFIG_ARM64_TUNABLES		# <config_arm64_tunables>
+
 options   NOS_ARM_ASM			# <nos_arm_asm>
 options   NOS_ARM_PMAP			# <nos_arm_pmap>
 

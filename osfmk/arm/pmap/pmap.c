@@ -84,8 +84,9 @@
 
 #include <arm64/proc_reg.h>
 #include <pexpert/arm64/boot.h>
+#if CONFIG_SART
 #include <arm64/ppl/sart.h>
-#include <arm64/ppl/uat.h>
+#endif
 
 #if defined(KERNEL_INTEGRITY_KTRR) || defined(KERNEL_INTEGRITY_CTRR) || defined(KERNEL_INTEGRITY_PV_CTRR)
 #include <arm64/amcc_rorgn.h>
@@ -2331,10 +2332,12 @@ pmap_bootstrap(
 	 */
 	pmap_data_bootstrap();
 
+#if CONFIG_SART
 	/**
 	 * Bootstrap any necessary SART data structures and values needed from the device tree.
 	 */
 	sart_bootstrap();
+#endif
 
 	/**
 	 * Don't make any assumptions about the alignment of avail_start before this
@@ -6179,6 +6182,8 @@ pmap_construct_pte(
 	pte |= ARM_PTE_AF;
 	return pte;
 }
+
+static void pmap_phys_write_disable(vm_address_t va);
 
 MARK_AS_PMAP_TEXT kern_return_t
 pmap_enter_options_internal(
@@ -11055,7 +11060,11 @@ pmap_batch_set_cache_attributes_internal(
 				panic("%s: page is not managed; addr: 0x%016llx", __func__, paddr);
 			}
 
+#if defined(APPLE_ARM64_ARCH_FAMILY) && !APPLEVIRTUALPLATFORM
 			CleanPoC_DcacheRegion_Force_nopreempt_nohid(phystokv(paddr), PAGE_SIZE);
+#else
+			CleanPoC_DcacheRegion_Force_nopreempt(phystokv(paddr), PAGE_SIZE);
+#endif
 
 			page_index++;
 
@@ -12231,6 +12240,23 @@ pmap_pin_kernel_pages(vm_offset_t kva __unused, size_t nbytes __unused)
 
 void __unused
 pmap_unpin_kernel_pages(vm_offset_t kva __unused, size_t nbytes __unused)
+{
+}
+
+/*
+ * Without XNU_MONITOR there is no separate secure trampoline enforcing
+ * code-signing page lockdown, so these are no-ops: page protection is
+ * already whatever the (non-secure) pmap set it to.
+ */
+static void __unused
+pmap_ppl_lockdown_pages(vm_address_t kva __unused, vm_size_t size __unused,
+    uint64_t lockdown_flag __unused, bool ppl_writable __unused)
+{
+}
+
+static void __unused
+pmap_ppl_unlockdown_pages(vm_address_t kva __unused, vm_size_t size __unused,
+    uint64_t lockdown_flag __unused, bool ppl_writable __unused)
 {
 }
 

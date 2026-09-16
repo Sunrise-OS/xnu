@@ -13,6 +13,7 @@ osfmk/arm/pmap/pmap_data.c		optional nos_arm_pmap
 osfmk/arm/pmap/pmap_iommu.c		optional nos_arm_pmap
 osfmk/arm/pmap/pmap_misc.c		optional nos_arm_pmap
 osfmk/arm/pmap/pmap_ppl_interface.c	optional nos_arm_pmap
+osfmk/arm64/ppl/sart.c			optional nos_arm_pmap config_sart
 
 osfmk/arm64/sptm/pmap/pmap.c		optional nos_arm_asm config_sptm
 osfmk/arm64/sptm/pmap/pmap_cs.c		optional nos_arm_asm config_sptm
@@ -21,7 +22,7 @@ osfmk/arm64/sptm/pmap/pmap_iommu.c	optional nos_arm_asm config_sptm
 osfmk/arm64/sptm/pmap/pmap_misc.c	optional nos_arm_asm config_sptm
 osfmk/arm64/sptm/pmap/pmap_ppl_interface.c	optional nos_arm_asm config_sptm
 osfmk/arm64/sptm/start_sptm.s		optional nos_arm_asm config_sptm
-osfmk/arm64/amcc_rorgn_sptm.c		optional nos_arm_asm config_sptm
+osfmk/arm64/amcc_rorgn_sptm.c		optional nos_arm_asm config_sptm config_amcc_rorgn
 osfmk/arm64/sptm/arm_init_sptm.c	optional config_sptm
 osfmk/arm64/sop.c			optional config_sptm
 
@@ -35,10 +36,10 @@ osfmk/arm64/WKdmCompress_4k.s	standard
 osfmk/arm64/WKdmData.s		standard
 osfmk/arm64/lz4_decode_arm64.s  standard
 osfmk/arm64/lz4_encode_arm64.s  standard
-osfmk/arm64/amcc_rorgn_ppl.c optional nos_arm_asm config_pmap_ppl
-osfmk/arm64/amcc_rorgn_ppl_amcc.c optional nos_arm_asm config_pmap_ppl
-osfmk/arm64/amcc_rorgn_common.c optional nos_arm_asm
-osfmk/arm64/amcc_rorgn_pv_ctrr.c optional nos_arm_asm
+osfmk/arm64/amcc_rorgn_ppl.c optional nos_arm_asm config_pmap_ppl config_amcc_rorgn
+osfmk/arm64/amcc_rorgn_ppl_amcc.c optional nos_arm_asm config_pmap_ppl config_amcc_rorgn
+osfmk/arm64/amcc_rorgn_common.c optional nos_arm_asm config_amcc_rorgn
+osfmk/arm64/amcc_rorgn_pv_ctrr.c optional nos_arm_asm config_amcc_rorgn
 osfmk/arm64/bcopy.s standard
 osfmk/arm64/bzero.s standard
 osfmk/arm/caches.c		standard
