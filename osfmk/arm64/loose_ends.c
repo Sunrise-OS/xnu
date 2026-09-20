@@ -1133,3 +1133,30 @@ apply_func_phys(
 
 	return func((void*)phystokv(dst64), bytes, arg);
 }
+
+#include <pexpert/device_tree.h>
+
+__attribute__((weak)) void
+pmap_set_nested(pmap_t pmap)
+{
+	if (pmap) {
+		*((uint8_t *)pmap + 0xef) = 3; /* PMAP_TYPE_NESTED */
+	}
+}
+
+uint32_t
+static_if_dt_property_uint32(const char *path, const char *prop, uint32_t defval)
+{
+	DTEntry entry;
+	void const *val;
+	unsigned int size;
+	if (SecureDTLookupEntry(NULL, path, &entry) == kSuccess) {
+		if (SecureDTGetProperty(entry, prop, &val, &size) == kSuccess && size >= sizeof(uint32_t)) {
+			return *(const uint32_t *)val;
+		}
+	}
+	return defval;
+}
+
+__attribute__((weak)) int allow_data_exec = 0;
+__attribute__((weak)) int allow_stack_exec = 0;

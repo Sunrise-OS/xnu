@@ -720,6 +720,20 @@ task_get_64bit_data(task_t task)
 	return task_has_64Bit_data(task);
 }
 
+#undef task_has_64Bit_addr
+boolean_t
+task_has_64Bit_addr(task_t task)
+{
+	return task ? ((task->t_flags & TF_64B_ADDR) != 0) : FALSE;
+}
+
+#undef task_has_64Bit_data
+boolean_t
+task_has_64Bit_data(task_t task)
+{
+	return task ? ((task->t_flags & TF_64B_DATA) != 0) : FALSE;
+}
+
 void
 task_set_platform_binary(
 	task_t task,

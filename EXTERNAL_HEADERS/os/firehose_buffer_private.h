@@ -21,6 +21,10 @@
 #ifndef __FIREHOSE_BUFFER_PRIVATE__
 #define __FIREHOSE_BUFFER_PRIVATE__
 
+#ifndef OS_FIREHOSE_SPI
+#define OS_FIREHOSE_SPI 1
+#endif
+
 #if OS_FIREHOSE_SPI
 #ifdef KERNEL
 #include <stdint.h>

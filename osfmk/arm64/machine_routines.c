@@ -3419,7 +3419,7 @@ ml_unsafe_kernel_text(void)
  * engineering/dev-fused-only diagnostic paths that key off this - the
  * conservative choice given there is no real fuse state to read.
  */
-boolean_t
+__attribute__((weak)) boolean_t
 ml_device_is_prod_fused(void)
 {
 	return TRUE;

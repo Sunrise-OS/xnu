@@ -2374,12 +2374,12 @@ mach_vm_range_create(
  * despite not being exported in the symbol sets.
  */
 
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__arm64__)
 
 extern typeof(mach_vm_remap_external) mach_vm_remap;
 extern typeof(mach_vm_map_external) mach_vm_map;
 extern typeof(vm_map_external) vm_map;
-
+extern typeof(vm_allocate_external) vm_allocate;
 kern_return_t
 mach_vm_map(
 	vm_map_t                target_map,
@@ -2433,6 +2433,35 @@ vm_map(
 	return mach_vm_map(target_map, address,
 	           size, mask, flags, port, offset, copy,
 	           cur_protection, max_protection, inheritance);
+}
+
+kern_return_t
+vm_allocate(
+	vm_map_t                target_map,
+	vm_offset_ut           *address,
+	vm_size_ut              size,
+	int                     flags)
+{
+	return vm_allocate_external(target_map, address, size, flags);
+}
+
+kern_return_t
+mach_vm_allocate(
+	vm_map_t                map,
+	mach_vm_offset_ut      *addr,
+	mach_vm_size_ut         size,
+	int                     flags)
+{
+	return mach_vm_allocate_external(map, addr, size, flags);
+}
+
+kern_return_t
+mach_vm_deallocate(
+	vm_map_t                map,
+	mach_vm_offset_ut       start,
+	mach_vm_size_ut         size)
+{
+	return mach_vm_deallocate_external(map, start, size);
 }
 
 #endif /* __x86_64__ */

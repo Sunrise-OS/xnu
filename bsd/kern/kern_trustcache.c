@@ -1091,6 +1091,17 @@ query_trust_cache(
 }
 
 kern_return_t
+query_trust_cache_with_length(
+	TCQueryType_t query_type,
+	const uint8_t *cdhash,
+	size_t cdhash_len,
+	TrustCacheQueryToken_t *query_token)
+{
+#pragma unused(cdhash_len)
+	return query_trust_cache(query_type, cdhash, query_token);
+}
+
+kern_return_t
 query_trust_cache_for_rem(
 	const uint8_t cdhash[kTCEntryHashSize],
 	__unused uint8_t *rem_perms)
