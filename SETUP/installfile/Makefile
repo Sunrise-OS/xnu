@@ -8,11 +8,11 @@ include $(MakeInc_def)
 
 OBJS = installfile.o
 
-CFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION) -g -O0 -I$(SOURCE) -I.
+CFLAGS = $(HOST_SYSROOT_FLAGS) -g -O0 -I$(SOURCE) -I.
 
 WARNFLAGS = -Wall
 
-LDFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION)
+LDFLAGS = $(HOST_SYSROOT_FLAGS)
 
 installfile: $(OBJS)
 	@$(LOG_HOST_LD) "$@"

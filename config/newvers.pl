@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # This tool is used to stamp kernel version information into files at kernel
 # build time.  Each argument provided on the command line is the path to a file

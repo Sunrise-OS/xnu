@@ -8,15 +8,22 @@ include $(MakeInc_def)
 
 OBJS = kextsymboltool.o
 
-CFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION) -g -O0 -I$(SOURCE) -I.
+CFLAGS = $(HOST_SYSROOT_FLAGS) -g -O0 -I$(SOURCE) -I. \
+	-I$(SRCROOT)/EXTERNAL_HEADERS
 
 WARNFLAGS = -Wall
 
-LDFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION) -lstdc++
+ifeq ($(HOST_OS),Darwin)
+LDFLAGS = $(HOST_SYSROOT_FLAGS) -lstdc++
+HOST_LD = $(HOST_CC)
+else
+LDFLAGS = $(HOST_SYSROOT_FLAGS)
+HOST_LD = $(HOST_CXX)
+endif
 
 kextsymboltool: $(OBJS)
 	@$(LOG_HOST_LD) "$@"
-	$(_v)$(HOST_CC) $(LDFLAGS) -o $@ $^
+	$(_v)$(HOST_LD) $(LDFLAGS) -o $@ $^
 	@$(LOG_HOST_CODESIGN) "$@"
 	$(_v)env CODESIGN_ALLOCATE=$(HOST_CODESIGN_ALLOCATE) $(HOST_CODESIGN) -s - $@
 

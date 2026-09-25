@@ -117,12 +117,14 @@ VERBOSE_GENERATED_MAKE_FRAGMENTS = NO
 # Defaults
 #
 
+HOST_OS ?= $(shell uname -s)
 SDKROOT ?= macosx
 HOST_SDKROOT ?= macosx
 
 # SDKROOT may be passed as a shorthand like "iphoneos.internal". We
 # must resolve these to a full path and override SDKROOT.
 
+ifeq ($(HOST_OS),Darwin)
 ifeq ($(origin SDKROOT_RESOLVED),undefined)
 export SDKROOT_RESOLVED := $(shell $(XCRUN) -sdk $(SDKROOT) -show-sdk-path)
 ifeq ($(strip $(SDKROOT)_$(SDKROOT_RESOLVED)),/_)
@@ -142,14 +144,25 @@ override HOST_SDKROOT = $(HOST_SDKROOT_RESOLVED)
 ifeq ($(origin SDKVERSION),undefined)
      export SDKVERSION := $(shell $(XCRUN) -sdk $(SDKROOT) -show-sdk-version)
 endif
-
+else
+export SDKROOT_RESOLVED := $(if $(filter /%,$(SDKROOT)),$(SDKROOT),/)
+export HOST_SDKROOT_RESOLVED := $(if $(filter /%,$(HOST_SDKROOT)),$(HOST_SDKROOT),/)
+override SDKROOT = $(SDKROOT_RESOLVED)
+override HOST_SDKROOT = $(HOST_SDKROOT_RESOLVED)
+export SDKVERSION ?= 15.0
+endif
 ifeq ($(origin PLATFORM),undefined)
+	ifeq ($(HOST_OS),Darwin)
 	export PLATFORMPATH := $(shell $(XCRUN) -sdk $(SDKROOT) -show-sdk-platform-path)
 	export PLATFORM := $(shell echo $(PLATFORMPATH) | sed 's,^.*/\([^/]*\)\.platform$$,\1,' | sed 's,\.[^.]*$$,,')
 	ifeq ($(PLATFORM),)
 		export PLATFORM := MacOSX
 	else ifeq ($(shell echo $(PLATFORM) | tr A-Z a-z),watchos)
 		export PLATFORM := WatchOS
+	endif
+	else
+	export PLATFORMPATH := /
+	export PLATFORM := MacOSX
 	endif
 endif
 
@@ -224,6 +237,7 @@ endif
 
 # CC/CXX get defined by make(1) by default, so we can't check them
 # against the empty string to see if they haven't been set
+ifeq ($(HOST_OS),Darwin)
 ifeq ($(origin CC),default)
 	export CC := $(shell $(XCRUN) -sdk $(SDKROOT) -find clang)
 endif
@@ -296,6 +310,35 @@ endif
 ifeq ($(origin OBJDUMP),undefined)
 	export OBJDUMP := $(shell $(XCRUN) -sdk $(SDKROOT) -find objdump 2> /dev/null)
 endif
+else
+ifeq ($(origin CC),default)
+	export CC := clang
+endif
+ifeq ($(origin CXX),default)
+	export CXX := clang++
+endif
+export MIG ?= mig
+export MIGCC ?= $(CC)
+export IIG ?= iig
+export STRIP ?= llvm-strip
+export LIPO ?= llvm-lipo
+export LIBTOOL ?= llvm-ar
+export OTOOL ?= llvm-objdump
+export NM ?= llvm-nm
+export UNIFDEF ?= unifdef
+export DSYMUTIL ?= dsymutil
+export NMEDIT ?= nmedit
+export GIT ?= git
+export SCAN_BUILD ?= scan-build
+export CTFINSERT ?= ctf_insert
+export CTFCONVERT ?= ctfconvert
+export CTFMERGE ?= ctfmerge
+export CTFDUMP ?= ctfdump
+export DOCC ?= docc
+export PYTHON ?= python3
+export OBJDUMP ?= llvm-objdump
+export LTO_LIBRARY ?= $(shell llvm-config --libdir 2>/dev/null)/libLTO.so
+endif
 
 #
 # Platform options
@@ -328,36 +371,42 @@ INSTALL = $(OBJROOT)/SETUP/installfile/installfile
 REPLACECONTENTS = $(OBJROOT)/SETUP/replacecontents/replacecontents
 VM_SANITIZE_ADOPTION_CHECK = $(SRCROOT)/tools/vm_sanitize_enforcement.py
 
-# Standard BSD tools
-RM = /bin/rm -f
-RMDIR = /bin/rmdir
+# Standard tools. Resolve these through PATH so the build also works in
+# non-FHS environments such as Nix development shells.
+RM = rm -f
+RMDIR = rmdir
 CP = cp
-MV = /bin/mv
-LN = /bin/ln -fs
-CAT = /bin/cat
-MKDIR = /bin/mkdir -p
-CHMOD = /bin/chmod
-FIND = /usr/bin/find
-XARGS = /usr/bin/xargs
-PAX = /bin/pax
-BASENAME = /usr/bin/basename
-DIRNAME = /usr/bin/dirname
-TR = /usr/bin/tr
-TOUCH = /usr/bin/touch
-SLEEP = /bin/sleep
-AWK = /usr/bin/awk
-SED = /usr/bin/sed
-PLUTIL = /usr/bin/plutil
-PATCH = /usr/bin/patch
-GREP = /usr/bin/grep
+MV = mv
+LN = ln -fs
+CAT = cat
+MKDIR = mkdir -p
+CHMOD = chmod
+FIND = find
+XARGS = xargs
+PAX = pax
+BASENAME = basename
+DIRNAME = dirname
+TR = tr
+TOUCH = touch
+SLEEP = sleep
+AWK = awk
+SED = sed
+PLUTIL = plutil
+PATCH = patch
+GREP = grep
 
 #
 # Command to generate host binaries. Intentionally not
 # $(CC), which controls the target compiler
 #
 ifeq ($(origin HOST_OS_VERSION),undefined)
+	ifeq ($(HOST_OS),Darwin)
 	export HOST_OS_VERSION	:= $(shell sw_vers -productVersion)
+	else
+	export HOST_OS_VERSION	:= $(shell uname -r)
+	endif
 endif
+ifeq ($(HOST_OS),Darwin)
 ifeq ($(origin HOST_CC),undefined)
 	export HOST_CC		:= $(shell $(XCRUN) -sdk $(HOST_SDKROOT) -find clang)
 endif
@@ -375,6 +424,22 @@ ifeq ($(origin HOST_CODESIGN),undefined)
 endif
 ifeq ($(origin HOST_CODESIGN_ALLOCATE),undefined)
 	export HOST_CODESIGN_ALLOCATE	:= $(shell $(XCRUN) -sdk $(HOST_SDKROOT) -find codesign_allocate)
+endif
+else
+export HOST_CC ?= $(CC)
+export HOST_FLEX ?= flex
+export HOST_BISON ?= bison
+export HOST_GM4 ?= m4
+export HOST_CODESIGN ?= true
+export HOST_CODESIGN_ALLOCATE ?= true
+export HOST_SYSROOT_FLAGS :=
+# A non-Darwin host has no SDK System.kext from which to read this value.
+# Keep this fallback in sync with the imported XNU release.
+export RC_DARWIN_KERNEL_VERSION ?= 12377.121.6
+endif
+
+ifeq ($(HOST_OS),Darwin)
+export HOST_SYSROOT_FLAGS := -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION)
 endif
 
 #

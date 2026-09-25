@@ -130,3 +130,6 @@ osfmk/kern/ecc_init.c		standard
 osfmk/kern/ecc_logging.c	optional config_ecc_logging
 
 osfmk/kern/memory_error_logging.c	standard
+
+# C++ exit-time destructor registration for OSS hardware (libcc_kext replacement)
+osfmk/kern/cxx_atexit.c	optional nos_arm_asm

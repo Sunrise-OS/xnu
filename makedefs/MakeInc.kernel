@@ -144,7 +144,7 @@ ifeq ($(DO_CTFMERGE),1)
 	$(_v)$(CTFMERGE) -l xnu -o $@ -Z $@.ctfdata $@.ctf
 	$(_v)if [ -s $@.ctfdata ]; then                          \
 		$(LOG_CTFINSERT) "$(@F)";                            \
-		$(CTFINSERT) $@	$(ARCH_FLAGS_$(CURRENT_ARCH_CONFIG)) \
+		$(CTFINSERT) $@	$(CCTOOLS_ARCH_FLAGS_$(CURRENT_ARCH_CONFIG)) \
 			     $@.ctfdata -o $@;                           \
 	else                                                     \
 	    exit 1;                                              \
@@ -162,7 +162,7 @@ ifeq ($(DO_CTFMERGE),1)
 	$(_v)$(CTFMERGE) -l xnu -o $@ -Z $@.ctfdata $(TARGET)/$(KERNEL_FILE_NAME).ctf
 	$(_v)if [ -s $@.ctfdata ]; then                          \
 		$(LOG_CTFINSERT) "$(@F)";                            \
-		$(CTFINSERT) $@	$(ARCH_FLAGS_$(CURRENT_ARCH_CONFIG)) \
+		$(CTFINSERT) $@	$(CCTOOLS_ARCH_FLAGS_$(CURRENT_ARCH_CONFIG)) \
 			     $@.ctfdata -o $@;                           \
 	else                                                     \
 	    exit 1;                                              \
@@ -184,7 +184,11 @@ ifeq ($(BUILD_XNU_LIBRARY),1)
 $(TARGET)/lib$(KERNEL_FILE_NAME).a: $(addprefix $(TARGET)/,$(foreach component,$(COMPONENT_LIST),$(component)/$(CURRENT_KERNEL_CONFIG)/$(component).libfilelist)) nonlto.o version.o lastkerneldataconst.o .LDFLAGS $(filter %/MakeInc.kernel,$(MAKEFILE_LIST))
 	@$(LOG_LIBTOOL) "$(@F)"
 	$(_v)$(CAT) $(filter %.libfilelist,$+) < /dev/null > archive.filelist
+ifeq ($(HOST_OS),Darwin)
 	$(_v)$(LIBTOOL) -static -csD -filelist archive.filelist version.o lastkerneldataconst.o -o $@
+else
+	$(_v)$(LIBTOOL) --format=darwin rcs $@ @archive.filelist version.o lastkerneldataconst.o
+endif
 	$(_v)$(LN) $(call function_convert_build_config_to_objdir,$(CURRENT_BUILD_CONFIG))/lib$(KERNEL_FILE_NAME).a $(OBJROOT)/lib$(KERNEL_FILE_NAME).a
 endif
 
@@ -236,6 +240,15 @@ else
 	$(_v)$(LD) $(LDFLAGS_KERNEL) $(LDFLAGS_KERNEL_ONLY) -filelist link.filelist $(filter %.o,$+) -o $@ $(LD_KERNEL_LIBS) $(LD_KERNEL_ARCHIVES)
 endif
 
+ifneq ($(HOST_OS),Darwin)
+$(COMPILER_RT_PROFILE_ARCHIVE): $(SRCROOT)/tools/compiler-rt-profile/build.sh
+	$(_v)$(SHELL) $< \
+		"$(CC)" "$(AR)" "$(COMPILER_RT_PROFILE_SOURCE)" \
+		"$(SRCROOT)" "$(OBJROOT)" "$@" \
+		$($(addsuffix $(CURRENT_ARCH_CONFIG),ARCH_FLAGS_)) \
+		$(DEPLOYMENT_TARGET_FLAGS)
+endif
+
 ifeq ($(RC_ProjectName),xnu_libraries)
 $(TARGET)/compile_commands.json: $(addprefix $(TARGET)/,$(foreach component,$(COMPONENT_LIST),$(component)/$(CURRENT_KERNEL_CONFIG)/$(component).libfilelist))
 	$(_v)files="$$(sed -e 's/$$/.json/' $(filter %.libfilelist,$+))"; \
@@ -255,12 +268,24 @@ $(TARGET)/$(KERNEL_FILE_NAME).link/$(KERNEL_FILE_NAME).a:   $(TARGET)/$(KERNEL_F
 ifeq ($(PRE_LTO),1)
 	$(_v)if [ -d $(TARGET)/justlto.o ]; \
 	then \
+ifeq ($(HOST_OS),Darwin)
 	    $(LIBTOOL) -ca $(TARGET)/justlto.o/*.o -filelist nonltolink.filelist -o $@; \
+else
+	    $(LIBTOOL) --format=darwin rcs $@ $(TARGET)/justlto.o/*.o @nonltolink.filelist; \
+endif
 	else \
+ifeq ($(HOST_OS),Darwin)
 	    $(LIBTOOL) -ca $(TARGET)/justlto.o -filelist nonltolink.filelist -o $@; \
+else
+	    $(LIBTOOL) --format=darwin rcs $@ $(TARGET)/justlto.o @nonltolink.filelist; \
+endif
 	fi
 else
+ifeq ($(HOST_OS),Darwin)
 	$(_v)$(LIBTOOL) -ca -filelist link.filelist version.o lastkerneldataconst.o lastkernelconstructor.o -o $@
+else
+	$(_v)$(LIBTOOL) --format=darwin rcs $@ @link.filelist version.o lastkerneldataconst.o lastkernelconstructor.o
+endif
 endif
 	$(_v)cp $(TARGET)/all-kpi.exp $(TARGET)/$(KERNEL_FILE_NAME).link/$(KERNEL_FILE_NAME).exp
 	$(_v)cp $(TARGET)/all-alias.exp $(TARGET)/$(KERNEL_FILE_NAME).link/$(KERNEL_FILE_NAME).alias.exp

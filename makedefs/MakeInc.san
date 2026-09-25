@@ -20,7 +20,8 @@ SYMBOL_SET_BUILD_$(1) := $$(OBJPATH)/config/$(1).symbolset
 $$(SYMBOL_SET_BUILD_$(1)): $$(SRCROOT)/config/$(2).exports $$(OBJPATH)/config/allsymbols $$(KEXT_CREATE_SYMBOL_SET)
 	@$$(LOG_SYMBOLSET) "$(1)$$(Color0) ($$(ColorLF)$$(CURRENT_ARCH_CONFIG_LC), $$(CURRENT_KERNEL_CONFIG_LC) $$(Color0))"
 	$$(_v)$$(KEXT_CREATE_SYMBOL_SET)			\
-		$$(ARCH_FLAGS_$$(CURRENT_ARCH_CONFIG))	\
+		$$(KEXT_CREATE_SYMBOL_SET_FLAGS)		\
+		$$(CCTOOLS_ARCH_FLAGS_$$(CURRENT_ARCH_CONFIG)) \
 		-import $$(OBJPATH)/config/allsymbols		\
 		-export $$<		                \
 		-output $$@ $(_vstdout)

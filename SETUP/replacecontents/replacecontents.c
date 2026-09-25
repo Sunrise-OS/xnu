@@ -21,129 +21,126 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+#include <err.h>
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <stdbool.h>
-#include <errno.h>
-#include <err.h>
 #include <sysexits.h>
+#include <unistd.h>
 
-#include <sys/stat.h>
 #include <sys/fcntl.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 
 void usage(void);
+static const char *program_name;
 
-int
-main(int argc, char * argv[])
-{
-	struct stat sb;
-	char *newcontent = NULL;
-	size_t newcontentlength = 0;
-	char *oldcontent = NULL;
-	int ret;
-	int dstfd;
-	const char *dst = NULL;
-	ssize_t readsize, writesize;
-	int i;
+int main(int argc, char *argv[]) {
+  program_name = argv[0];
+  struct stat sb;
+  char *newcontent = NULL;
+  size_t newcontentlength = 0;
+  char *oldcontent = NULL;
+  int ret;
+  int dstfd;
+  const char *dst = NULL;
+  ssize_t readsize, writesize;
+  int i;
 
-	if (argc < 2) {
-		usage();
-	}
+  if (argc < 2) {
+    usage();
+  }
 
-	dst = argv[1];
+  dst = argv[1];
 
-	for (i = 2; i < argc; i++) {
-		newcontentlength += strlen(argv[i]) + 1 /* space or newline */;
-	}
-	newcontentlength += 1; /* NUL */
+  for (i = 2; i < argc; i++) {
+    newcontentlength += strlen(argv[i]) + 1 /* space or newline */;
+  }
+  newcontentlength += 1; /* NUL */
 
-	newcontent = malloc(newcontentlength);
-	if (newcontent == NULL) {
-		err(EX_UNAVAILABLE, "malloc() failed");
-	}
+  newcontent = malloc(newcontentlength);
+  if (newcontent == NULL) {
+    err(EX_UNAVAILABLE, "malloc() failed");
+  }
 
-	newcontent[0] = '\0';
+  newcontent[0] = '\0';
 
-	for (i = 2; i < argc; i++) {
-		strlcat(newcontent, argv[i], newcontentlength);
-		if (i < argc - 1) {
-			strlcat(newcontent, " ", newcontentlength);
-		} else {
-			strlcat(newcontent, "\n", newcontentlength);
-		}
-	}
+  for (i = 2; i < argc; i++) {
+    strlcat(newcontent, argv[i], newcontentlength);
+    if (i < argc - 1) {
+      strlcat(newcontent, " ", newcontentlength);
+    } else {
+      strlcat(newcontent, "\n", newcontentlength);
+    }
+  }
 
-	dstfd = open(dst, O_RDWR | O_CREAT | O_APPEND, DEFFILEMODE);
-	if (dstfd < 0) {
-		err(EX_NOINPUT, "open(%s)", dst);
-	}
+  dstfd = open(dst, O_RDWR | O_CREAT | O_APPEND, DEFFILEMODE);
+  if (dstfd < 0) {
+    err(EX_NOINPUT, "open(%s)", dst);
+  }
 
-	ret = fstat(dstfd, &sb);
-	if (ret < 0) {
-		err(EX_NOINPUT, "fstat(%s)", dst);
-	}
+  ret = fstat(dstfd, &sb);
+  if (ret < 0) {
+    err(EX_NOINPUT, "fstat(%s)", dst);
+  }
 
-	if (!S_ISREG(sb.st_mode)) {
-		err(EX_USAGE, "%s is not a regular file", dst);
-	}
+  if (!S_ISREG(sb.st_mode)) {
+    err(EX_USAGE, "%s is not a regular file", dst);
+  }
 
-	if (sb.st_size != newcontentlength) {
-		/* obvious new content must be different than old */
-		goto replace;
-	}
+  if (sb.st_size != newcontentlength) {
+    /* obvious new content must be different than old */
+    goto replace;
+  }
 
-	oldcontent = malloc(newcontentlength);
-	if (oldcontent == NULL) {
-		err(EX_UNAVAILABLE, "malloc(%lu) failed", newcontentlength);
-	}
+  oldcontent = malloc(newcontentlength);
+  if (oldcontent == NULL) {
+    err(EX_UNAVAILABLE, "malloc(%lu) failed", newcontentlength);
+  }
 
-	readsize = read(dstfd, oldcontent, newcontentlength);
-	if (readsize == -1) {
-		err(EX_UNAVAILABLE, "read() failed");
-	} else if (readsize != newcontentlength) {
-		errx(EX_UNAVAILABLE, "short read of file");
-	}
+  readsize = read(dstfd, oldcontent, newcontentlength);
+  if (readsize == -1) {
+    err(EX_UNAVAILABLE, "read() failed");
+  } else if (readsize != newcontentlength) {
+    errx(EX_UNAVAILABLE, "short read of file");
+  }
 
-	if (0 == memcmp(oldcontent, newcontent, newcontentlength)) {
-		/* binary comparison succeeded, just exit */
-		free(oldcontent);
-		ret = close(dstfd);
-		if (ret < 0) {
-			err(EX_UNAVAILABLE, "close() failed");
-		}
+  if (0 == memcmp(oldcontent, newcontent, newcontentlength)) {
+    /* binary comparison succeeded, just exit */
+    free(oldcontent);
+    ret = close(dstfd);
+    if (ret < 0) {
+      err(EX_UNAVAILABLE, "close() failed");
+    }
 
-		exit(0);
-	}
+    exit(0);
+  }
 
 replace:
-	ret = ftruncate(dstfd, 0);
-	if (ret < 0) {
-		err(EX_UNAVAILABLE, "ftruncate() failed");
-	}
+  ret = ftruncate(dstfd, 0);
+  if (ret < 0) {
+    err(EX_UNAVAILABLE, "ftruncate() failed");
+  }
 
-	writesize = write(dstfd, newcontent, newcontentlength);
-	if (writesize == -1) {
-		err(EX_UNAVAILABLE, "write() failed");
-	} else if (writesize != newcontentlength) {
-		errx(EX_UNAVAILABLE, "short write of file");
-	}
+  writesize = write(dstfd, newcontent, newcontentlength);
+  if (writesize == -1) {
+    err(EX_UNAVAILABLE, "write() failed");
+  } else if (writesize != newcontentlength) {
+    errx(EX_UNAVAILABLE, "short write of file");
+  }
 
-	ret = close(dstfd);
-	if (ret < 0) {
-		err(EX_NOINPUT, "close(dst)");
-	}
+  ret = close(dstfd);
+  if (ret < 0) {
+    err(EX_NOINPUT, "close(dst)");
+  }
 
-	return 0;
+  return 0;
 }
 
-void
-usage(void)
-{
-	fprintf(stderr, "Usage: %s <dst> <new> <contents> <...>\n",
-	    getprogname());
-	exit(EX_USAGE);
+void usage(void) {
+  fprintf(stderr, "Usage: %s <dst> <new> <contents> <...>\n", program_name);
+  exit(EX_USAGE);
 }
