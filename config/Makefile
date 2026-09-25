@@ -36,6 +36,16 @@ SYMBOL_SET_PLIST_COMPONENT_LIST := $(SYMBOL_COMPONENT_LIST) Kasan Kcov
 
 KEXT_PLIST_LIST += $(foreach symbolset,$(SYMBOL_COMPONENT_LIST),System.kext/PlugIns/$(symbolset).kext/Info.plist)
 
+# OSS boards deliberately omit Apple-only platform and DriverKit components.
+# Build their symbol sets from the intersection of the export lists and the
+# linked kernel instead of treating every omitted Apple KPI as an error.
+ifneq ($(filter QEMU SUPERBIRD IPAD41,$(CURRENT_MACHINE_CONFIG)),)
+KEXT_CREATE_SYMBOL_SET_FLAGS += -sect
+BUILD_SYMBOL_SET_CHECK :=
+else
+BUILD_SYMBOL_SET_CHECK := check_all_exports
+endif
+
 # In general you want it to be possible to have a CPU sub-type's symbol exports
 # alias to the parent type's exports. This is a special-case way to handle it
 # for now:
@@ -78,7 +88,8 @@ $$(TARGET)/$(1).symbolset: MY_EXPORTS_ARGS := $$(foreach file,$$($(1)_EXPORTS),-
 $$(TARGET)/$(1).symbolset: $$($(1)_EXPORTS) $$(TARGET)/allsymbols $$(KEXT_CREATE_SYMBOL_SET)
 	@$$(LOG_SYMBOLSET) "$(1)$$(Color0) ($$(ColorLF)$$(CURRENT_ARCH_CONFIG_LC)$$(Color0))"
 	$$(_v)$$(KEXT_CREATE_SYMBOL_SET)			\
-		$$(ARCH_FLAGS_$$(CURRENT_ARCH_CONFIG))	\
+		$$(KEXT_CREATE_SYMBOL_SET_FLAGS)		\
+		$$(CCTOOLS_ARCH_FLAGS_$$(CURRENT_ARCH_CONFIG)) \
 		-import $$(TARGET)/allsymbols		\
 		$$(MY_EXPORTS_ARGS)			\
 		-output $$@ $$(_vstdout)
@@ -125,14 +136,16 @@ $(TARGET)/allsymbols: $(OBJPATH)/$(KERNEL_FILE_NAME)
 
 check_all_exports: $(TARGET)/allsymbols $(KEXT_CREATE_SYMBOL_SET)
 	$(_v)$(KEXT_CREATE_SYMBOL_SET)					\
-		$(ARCH_FLAGS_$(CURRENT_ARCH_CONFIG))			\
+		$(KEXT_CREATE_SYMBOL_SET_FLAGS)				\
+		$(CCTOOLS_ARCH_FLAGS_$(CURRENT_ARCH_CONFIG))		\
 		-import $(TARGET)/allsymbols				\
 		$(foreach symbolset,$(filter-out Private,$(SYMBOL_COMPONENT_LIST)),	\
 			-export $(SOURCE)/$(symbolset).exports		\
 			-export $(SOURCE)/$(symbolset).$(EXPORT_SOURCE_ARCH_CONFIG_LC).exports)	\
 		-output /dev/null $(_vstdout)
 	$(_v)$(KEXT_CREATE_SYMBOL_SET)					\
-		$(ARCH_FLAGS_$(CURRENT_ARCH_CONFIG))			\
+		$(KEXT_CREATE_SYMBOL_SET_FLAGS)				\
+		$(CCTOOLS_ARCH_FLAGS_$(CURRENT_ARCH_CONFIG))		\
 		-import $(TARGET)/allsymbols				\
 		$(foreach symbolset,$(filter-out Unsupported,$(SYMBOL_COMPONENT_LIST)),	\
 			-export $(SOURCE)/$(symbolset).exports		\
@@ -147,7 +160,7 @@ $(OBJPATH)/$(MI_SUPPORTED_KPI_FILENAME): $(EXPORTS_FILES)
 	@$(LOG_SUPPORTED_KPI) "all"
 	$(_v)$(SRCROOT)/config/list_supported.sh $(SOURCE) all $@
 
-build_symbol_sets: check_all_exports $(SYMBOL_SET_BUILD) $(TARGET)/allsymbols \
+build_symbol_sets: $(BUILD_SYMBOL_SET_CHECK) $(SYMBOL_SET_BUILD) $(TARGET)/allsymbols \
 			$(OBJPATH)/$(MD_SUPPORTED_KPI_FILENAME) \
 			$(OBJPATH)/$(MI_SUPPORTED_KPI_FILENAME)
 

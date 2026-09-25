@@ -1,2 +1,13 @@
 *.a
 /BUILD
+
+# Nix flake build outputs
+.direnv/
+result
+result-*
+
+# SETUP host tools built in-tree
+SETUP/kextsymboltool/kextsymboltool
+SETUP/kextsymboltool/kextsymboltool.o
+SETUP/setsegname/setsegname
+SETUP/setsegname/setsegname.o

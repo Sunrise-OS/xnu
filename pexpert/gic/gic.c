@@ -91,7 +91,7 @@ static inline void mmio_write32(vm_offset_t addr, uint32_t val) {
     *(volatile uint32_t *)addr = val;
 }
 
-static inline uint32_t gicd_read(uint32_t offset) {
+static inline uint32_t __attribute__((unused)) gicd_read(uint32_t offset) {
     return mmio_read32(gicd_base + offset);
 }
 

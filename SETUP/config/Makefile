@@ -9,12 +9,12 @@ include $(MakeInc_def)
 OBJS = externs.o main.o mkheaders.o mkioconf.o mkmakefile.o	\
 	openp.o searchp.o lexer.yy.o parser.o
 
-CFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION) -g -O0 -I$(SOURCE) -I.
+CFLAGS = $(HOST_SYSROOT_FLAGS) -g -O0 -I$(SOURCE) -I.
 CFLAGS += -DYY_NO_INPUT
 
 WARNFLAGS = -Wall
 
-LDFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION)
+LDFLAGS = $(HOST_SYSROOT_FLAGS)
 
 config: $(OBJS)
 	@$(LOG_HOST_LD) "$@"

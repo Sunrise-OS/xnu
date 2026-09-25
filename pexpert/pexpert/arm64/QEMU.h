@@ -33,18 +33,15 @@
  */
 
 /*
- * Deliberately left UNDEFINED, not `#define __ARM_16K_PG__ 0`: this is a
- * 4K-page device, but osfmk/arm64/proc_reg.h guards T0SZ_BOOT with
- * `#ifdef __ARM_16K_PG__` (true if *defined*, even to 0) while it guards
- * TCR_TG0_GRANULE_SIZE/ARM_TT_L2_SIZE/ARM_PGSHIFT with
- * `#if __ARM_16K_PG__` (true only if *nonzero*). Defining this to 0 trips
- * the former into the 16K-page T0SZ (17, expecting a 4-level walk) while
- * everything else takes the 4K-page branch (T0SZ 25, 3-level
- * start.s bootstrap tables + TG0=4K) - a self-inconsistent TCR_EL1 that
- * instruction-aborts the moment SCTLR_EL1.M is set. Leaving it undefined
- * makes both guards agree on the 4K-page branch, matching real Apple
- * boards, which never define this macro for 4K-page devices.
+ * 16K pages, as on VMAPPLE. The MacOSX platform selects ARM_LARGE_MEMORY
+ * (VM_KERNEL_LINK_ADDRESS 0xfffffe0007004000, 41 significant bits), which
+ * only fits the 16K-page TTBR1 (T1SZ_BOOT 17); with 4K pages T1SZ_BOOT is
+ * 25 (39-bit TTBR1 from 0xffffff8000000000) and the first kernel-VA fetch
+ * after SCTLR_EL1.M takes a level-0 translation fault. Needs a guest CPU
+ * that implements the 16K granule (ID_AA64MMFR0_EL1.TGran16), e.g. QEMU
+ * `-cpu cortex-a76`, `neoverse-n1` or `max`; cortex-a53/a57 do not.
  */
+#define __ARM_16K_PG__            1
 #define __ARM_RANGE_TLBI__        0
 
 #define ARM_PARAMETERIZED_PMAP    1

@@ -40,7 +40,11 @@ ifneq ($(filter $(SUPPORTED_EMBEDDED_PLATFORMS),$(PLATFORM)),)
 else ifneq ($(filter $(SUPPORTED_SIMULATOR_PLATFORMS),$(PLATFORM)),)
      override DEFAULT_ARCH_CONFIG := X86_64
 else
+ifneq ($(filter arm64 aarch64,$(shell uname -m)),)
+     override DEFAULT_ARCH_CONFIG := ARM64
+else
      override DEFAULT_ARCH_CONFIG := X86_64
+endif
 endif
 
 # Accept either explicit ARCH_CONFIGS or XBS-style RC_ARCHS
@@ -93,7 +97,11 @@ override DEFAULT_ARM64_MACHINE_CONFIG	:= NONE
 else ifneq ($(findstring _host,$(RC_ProjectName)),)
 override DEFAULT_ARM64_MACHINE_CONFIG	:= NONE
 else
+ifeq ($(HOST_OS),Darwin)
 override DEFAULT_ARM64_MACHINE_CONFIG	:= VMAPPLE
+else
+override DEFAULT_ARM64_MACHINE_CONFIG	:= QEMU
+endif
 endif
 
 # This is typically never specified (TARGET_CONFIGS is used)
@@ -298,7 +306,11 @@ endif
 # $(warning PRIMARY_KERNEL_CONFIGS is $(PRIMARY_KERNEL_CONFIGS))
 # $(warning VARIANT_CONFIGS is $(VARIANT_CONFIGS))
 
+ifeq ($(HOST_OS),Darwin)
 MEMORY_SIZE := $(shell /usr/sbin/sysctl -n hw.memsize)
+else
+MEMORY_SIZE := $(shell awk '/^MemTotal:/ { print $$2 * 1024 }' /proc/meminfo)
+endif
 
 # Assume LTO scaling by default, unless it is being explicitly passed on the command-line
 LARGE_BUILD_FOOTPRINT := $(if $(BUILD_LTO),$(BUILD_LTO),1)

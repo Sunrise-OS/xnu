@@ -8,11 +8,12 @@ include $(MakeInc_def)
 
 OBJS = setsegname.o
 
-CFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION) -g -O0 -I$(SOURCE) -I.
+CFLAGS = $(HOST_SYSROOT_FLAGS) -g -O0 -I$(SOURCE) -I. \
+	-I$(SRCROOT)/EXTERNAL_HEADERS
 
 WARNFLAGS = -Wall
 
-LDFLAGS = -isysroot $(HOST_SDKROOT) -mmacosx-version-min=$(HOST_OS_VERSION)
+LDFLAGS = $(HOST_SYSROOT_FLAGS)
 
 setsegname: $(OBJS)
 	@$(LOG_HOST_LD) "$@"
