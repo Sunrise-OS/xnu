@@ -74,34 +74,28 @@
 #endif /* ! ASSEMBLER */
 
 /*
- * GICv2, `-M virt`'s default (`gic-version=2`; `gic-version=3` would need
- * the ICC_*-system-register driver in pexpert/arm/pe_fiq.c instead, not
- * this MMIO one):
- *   GICD @ 0x08000000 (distributor)
- *   GICC @ 0x08010000 (CPU interface, MMIO - no ICC_* system registers)
- * Same architecture as SUPERBIRD's GIC-400 - HAS_GIC_V3 must stay
- * undefined here. The physical bases are injected into
- * pexpert/gic/gic.zig at build-graph time (tools/zig/boards.zig
- * GicBases), not read from this header; they are restated here only for
- * documentation.
+ * QEMU virt runs with GICv3 (boot firmware reports distributor at
+ * 0x08000000 and redistributors at 0x080a0000). Use the ICC system-register
+ * setup in pexpert/arm/pe_fiq.c; do not define GICC_PHYS_BASE or GICD_PHYS_BASE
+ * here, since those select the legacy GICv2 MMIO driver in pexpert/gic/gic.c.
+ * GICD and GICR ranges are read from AFDT by the GICv3 driver.
  */
+#define HAS_GIC_V3                1
 #define GIC_SPURIOUS_IRQ          1023
+#define GICR_PE_SIZE              0x20000
 
-#define GICD_PHYS_BASE            0x08000000ULL
-#define GICD_SIZE                 0x1000
-#define GICC_PHYS_BASE            0x08010000ULL
-#define GICC_SIZE                 0x1000
-
-#define GICD_CTLR                 0x0
-#define GICD_CTLR_ENABLEGRP0      0x1
-#define GICD_CTLR_ENABLEGRP1      0x2
-
-#define GICC_CTLR                 0x0
-#define GICC_PMR                  0x4
-#define GICC_BPR                  0x8
-#define GICC_IAR                  0xc
-#define GICC_EOIR                 0x10
-#define GICC_CTLR_ENABLEGRP0      0x1
-#define GICC_CTLR_ENABLEGRP1      0x2
+/* GICv3 registers used by pexpert/arm/pe_fiq.c (Arm IHI 0069). */
+#define GICD_CTLR                         0x0
+#define GICD_CTLR_ENABLEGRP0              0x1
+#define GICR_TYPER                        0x08
+#define GICR_WAKER                        0x14
+#define GICR_IGROUPR0                     0x10080
+#define GICR_ISENABLER0                   0x10100
+#define GICR_TYPER_AFFINITY_VALUE_SHIFT   32
+#define GICR_TYPER_LAST                   0x10
+#define GICR_WAKER_PROCESSORSLEEP         0x2
+#define GICR_WAKER_CHILDRENASLEEP         0x4
+#define ICC_CTLR_EOIMODE                  0x1
+#define ICC_SRE_SRE                       0x1
 
 #endif /* ! _PEXPERT_ARM64_QEMU_H */
